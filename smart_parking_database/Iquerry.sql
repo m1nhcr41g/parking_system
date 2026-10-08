@@ -269,3 +269,39 @@ IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_AccessLogs_Plate_Time'
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ParkingSessions_Active')
     CREATE INDEX IX_ParkingSessions_Active ON parking_sessions(status, vehicle_id, guest_plate);
 GO
+
+USE SmartParkingDB;
+GO
+
+-- 1. Tạo bảng refresh_tokens nếu chưa tồn tại
+IF OBJECT_ID('dbo.refresh_tokens', 'U') IS NULL
+BEGIN
+    CREATE TABLE refresh_tokens
+    (
+        id VARCHAR(36) PRIMARY KEY DEFAULT CONVERT(VARCHAR(36), NEWID()),
+        user_id VARCHAR(36) NOT NULL,
+        token VARCHAR(500) NOT NULL UNIQUE,
+        expires_at DATETIME2 NOT NULL,
+        created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+        revoked BIT NOT NULL DEFAULT 0,
+
+        CONSTRAINT FK_refresh_tokens_users
+            FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE CASCADE
+    );
+END
+GO
+
+-- 2. Index hỗ trợ tìm hoặc thu hồi token theo user_id
+IF NOT EXISTS
+(
+    SELECT *
+    FROM sys.indexes
+    WHERE name = 'IX_RefreshTokens_UserId'
+)
+BEGIN
+    CREATE INDEX IX_RefreshTokens_UserId
+    ON refresh_tokens(user_id);
+END
+GO
