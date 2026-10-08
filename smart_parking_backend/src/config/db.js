@@ -16,10 +16,10 @@ const config = {
 const connectDB = async () => {
   try {
     const pool = await sql.connect(config);
-    console.log('✅ Kết nối SQL Server (SmartParkingDB) thành công!');
+    console.log('Kết nối SQL Server (SmartParkingDB) thành công!');
     return pool;
   } catch (error) {
-    console.error('❌ Lỗi kết nối SQL Server:', error.message);
+    console.error('Lỗi kết nối SQL Server:', error.message);
     process.exit(1);
   }
 };
