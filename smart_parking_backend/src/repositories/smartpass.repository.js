@@ -145,8 +145,35 @@ async function getSmartPassesByUser(userId) {
     return result.recordset;
 }
 
+async function updateAutoPay(userId, smartPassId, autoPay) {
+    const pool = await poolPromise;
+
+    const result = await pool.request()
+        .input("user_id", sql.VarChar(36), userId)
+        .input("smartpass_id", sql.VarChar(36), smartPassId)
+        .input("auto_pay", sql.Bit, autoPay)
+        .query(`
+            UPDATE sp
+            SET sp.auto_pay = @auto_pay
+            OUTPUT
+                INSERTED.id AS smartpass_id,
+                INSERTED.vehicle_id,
+                INSERTED.status,
+                INSERTED.auto_pay
+            FROM smart_passes sp
+            INNER JOIN vehicle_owners vo
+                ON vo.vehicle_id = sp.vehicle_id
+            WHERE sp.id = @smartpass_id
+              AND vo.user_id = @user_id
+              AND sp.status = 'ACTIVE'
+        `);
+
+    return result.recordset[0] || null;
+}
+
 module.exports = {
     getVehicleById,
     createSmartPass,
-    getSmartPassesByUser
+    getSmartPassesByUser,
+    updateAutoPay
 };

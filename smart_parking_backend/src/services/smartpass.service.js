@@ -31,7 +31,26 @@ async function getSmartPassesByUser(userId) {
     return await smartpassRepository.getSmartPassesByUser(userId);
 }
 
+async function updateAutoPay(userId, smartPassId, autoPay) {
+    if (typeof autoPay !== "boolean") {
+        throw new Error("INVALID_AUTO_PAY");
+    }
+
+    const result = await smartpassRepository.updateAutoPay(
+        userId,
+        smartPassId,
+        autoPay
+    );
+
+    if (!result) {
+        throw new Error("SMARTPASS_NOT_FOUND_OR_INACTIVE");
+    }
+
+    return result;
+}
+
 module.exports = {
     createSmartPass,
-    getSmartPassesByUser
+    getSmartPassesByUser,
+    updateAutoPay
 };

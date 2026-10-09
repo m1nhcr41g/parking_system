@@ -95,7 +95,59 @@ async function getSmartPasses(req, res) {
     }
 }
 
+async function updateAutoPay(req, res) {
+    try {
+        const userId = req.body.user_id;
+        const smartPassId = req.params.id;
+        const autoPay = req.body.auto_pay;
+
+        if (!userId || typeof autoPay !== "boolean") {
+            return res.status(400).json({
+                success: false,
+                error: {
+                    code: "INVALID_REQUEST",
+                    message: "user_id và auto_pay (true/false) là bắt buộc"
+                }
+            });
+        }
+
+        const result = await smartpassService.updateAutoPay(
+            userId,
+            smartPassId,
+            autoPay
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Cập nhật AutoPay thành công",
+            data: result
+        });
+    } catch (error) {
+        const isNotFound =
+            error.message === "SMARTPASS_NOT_FOUND_OR_INACTIVE";
+
+        if (!isNotFound && error.message !== "INVALID_AUTO_PAY") {
+            console.error(error);
+        }
+
+        return res.status(
+            isNotFound ? 404 : error.message === "INVALID_AUTO_PAY" ? 400 : 500
+        ).json({
+            success: false,
+            error: {
+                code: error.message,
+                message: isNotFound
+                    ? "Không tìm thấy SmartPass đang hoạt động thuộc tài khoản này"
+                    : error.message === "INVALID_AUTO_PAY"
+                        ? "auto_pay phải là true hoặc false"
+                        : "Cập nhật AutoPay thất bại"
+            }
+        });
+    }
+}
+
 module.exports = {
     createSmartPass,
-    getSmartPasses
+    getSmartPasses,
+    updateAutoPay
 };
