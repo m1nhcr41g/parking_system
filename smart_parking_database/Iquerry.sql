@@ -31,7 +31,7 @@ CREATE TABLE staff_profiles (
 IF OBJECT_ID('dbo.vehicles', 'U') IS NULL
 CREATE TABLE vehicles (
     id VARCHAR(36) PRIMARY KEY DEFAULT NEWID(),
-    plate_number VARCHAR(20) NOT NULL UNIQUE,
+    plate_number VARCHAR(20) NULL UNIQUE,
     type VARCHAR(20) NOT NULL CHECK (type IN ('CAR', 'MOTORBIKE', 'BICYCLE')),
     brand NVARCHAR(50) NULL,
     model NVARCHAR(50) NULL,
