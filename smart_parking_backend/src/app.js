@@ -27,6 +27,40 @@ app.use(express.json());
 app.use("/api/v1/customer", vehicleRoutes);
 app.use("/api/v1/customer/smartpass", smartpassRoutes);
 
+
+const multer = require("multer");
+
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        const tooLarge = err.code === "LIMIT_FILE_SIZE";
+
+        return res.status(tooLarge ? 413 : 400).json({
+            success: false,
+            error: {
+                code: err.code,
+                message: tooLarge
+                    ? "File không được vượt quá 5 MB"
+                    : "Upload file thất bại"
+            }
+        });
+    }
+
+    if (err.message === "INVALID_FILE_TYPE") {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: "INVALID_FILE_TYPE",
+                message: "Chỉ chấp nhận JPG, JPEG, PNG hoặc PDF"
+            }
+        });
+    }
+
+    next(err);
+});
+
+
+
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

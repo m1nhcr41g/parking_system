@@ -1,10 +1,12 @@
 const express = require("express");
 const vehicleController = require("../controllers/vehicle.controller");
+const upload = require("../middlewares/upload.middleware");
 
 const router = express.Router();
 
 router.post(
     "/vehicles",
+    upload.single("registration_document"),
     vehicleController.createVehicle
 );
 router.get(

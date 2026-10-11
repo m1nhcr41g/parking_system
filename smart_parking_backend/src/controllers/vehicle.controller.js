@@ -1,4 +1,5 @@
 const vehicleService = require("../services/vehicle.service");
+const path = require("path");
 
 async function createVehicle(req, res) {
     try {
@@ -13,10 +14,23 @@ async function createVehicle(req, res) {
                 }
             });
         }
+            
+        const fileUrl = req.file
+            ? path.join(
+                "uploads",
+                "registration-documents",
+                req.file.filename
+            ).replace(/\\/g, "/")
+            : null;
+
+        const vehicleData = {
+            ...req.body,
+            file_url: fileUrl
+        };
 
         const result = await vehicleService.createVehicle(
             userId,
-            req.body
+            vehicleData
         );
 
         return res.status(201).json({
