@@ -1,8 +1,8 @@
 const express = require("express");
+const router = express.Router();
+
 const vehicleController = require("../controllers/vehicle.controller");
 const upload = require("../middlewares/upload.middleware");
-
-const router = express.Router();
 
 router.post(
     "/vehicles",
