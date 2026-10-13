@@ -19,6 +19,7 @@ async function createVehicle(req, res) {
             
         const fileUrl = req.file
             ? path.join(
+                "public",
                 "uploads",
                 "registration-documents",
                 req.file.filename

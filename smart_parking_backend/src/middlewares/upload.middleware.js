@@ -5,6 +5,7 @@ const crypto = require("crypto");
 
 const uploadDir = path.join(
     process.cwd(),
+    "public",
     "uploads",
     "registration-documents"
 );
