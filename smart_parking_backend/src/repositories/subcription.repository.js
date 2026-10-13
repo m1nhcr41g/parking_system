@@ -31,7 +31,7 @@ class SubcriptionRepository{
     async getUserSubscriptions(userId) {
     const pool = await poolPromise;
     const query = `
-      SELECT ss.*, sp.name AS plan_name, sp.duration, sp.price, v.plate_number
+      SELECT ss.*, sp.name AS plan_name, sp.duration, sp.price, ISNULL(v.plate_number, N'BICYCLE') AS plate_number, v.type AS  vehicle_type
       FROM service_subscriptions ss
       JOIN subscription_plans sp ON ss.plan_id = sp.id
       JOIN vehicles v ON ss.vehicle_id = v.id

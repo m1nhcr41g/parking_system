@@ -58,7 +58,7 @@ class BookingRepository{
 
     async getBookingHistory(userId){
       const pool = await poolPromise;
-      const query = `SELECT b.*, ps.code AS slot_code, v.plate_number
+      const query = `SELECT b.*, ps.code AS slot_code, ISNULL(v.plate_number, N'BICYCLE') AS plate_number, v.type AS vehicle_type
       FROM bookings b
       JOIN parking_slots ps ON b.slot_id = ps.id
       JOIN vehicles v ON b.vehicle_id = v.id
