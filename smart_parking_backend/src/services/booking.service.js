@@ -25,7 +25,7 @@ class BookingService{
             throw new Error('ko tim thay don dat cho');
         }
         if(booking.user.id!==userId){
-            throw new Error('ban ko co quyen huy don dat cho nay')
+            throw new Error('ban ko co quyen huy don dat cho nay');
         }
         if(booking.status=='CANCELLED'){
             throw new Error('don da huy trc do');

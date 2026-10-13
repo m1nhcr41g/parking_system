@@ -34,7 +34,7 @@ class BookingRepository{
       .input('slotId',sql.VarChar(36),slotId).input('startTime', sql.DateTime2, new Date(startTime)).input('endTime', sql.DateTime2, new Date(endTime))
       .query(query);
 
-      return result.recordset[0]
+      return result.recordset[0];
     }
 
     async findBookingById(bookingId){
