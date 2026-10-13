@@ -3,8 +3,6 @@ const path = require("path");
 
 async function createVehicle(req, res) {
     try {
-        //console.log("Uploaded file:", req.file);
-        //console.log("Request body:", req.body);
         const userId = req.body.user_id;
 
         if (!userId) {
