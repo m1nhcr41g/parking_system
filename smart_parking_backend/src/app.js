@@ -17,7 +17,10 @@ app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({
       success: false,
-      message: 'Dữ liệu JSON gửi lên không đúng định dạng cú pháp'
+      error: {
+        code: 'INVALID_JSON_BODY',
+        message: 'Dữ liệu JSON gửi lên không đúng định dạng cú pháp'
+      }
     });
   }
   next();
@@ -29,8 +32,8 @@ app.get('/', (req, res) => {
 
 // Route Auth
 app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/profile', profileRoutes);
-app.use('/customer/incidents', customerIncidentRoutes);
+app.use('/api/v1/users', profileRoutes);
+app.use('/api/v1/customer/incidents', customerIncidentRoutes);
 
 // Khởi động server và kết nối DB
 const startServer = async () => {

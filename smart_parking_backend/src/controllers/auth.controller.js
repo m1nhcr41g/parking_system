@@ -21,6 +21,17 @@ const register = async (req, res) => {
       });
     }
 
+    // 2.1 Chỉ cho phép các domain email hợp lệ (Whitelist)
+    const allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+    const domain = email.split('@')[1]?.toLowerCase();
+
+    if (!allowedDomains.includes(domain)) {
+      return res.status(400).json({
+        success: false,
+        message: `Hệ thống không hỗ trợ tên miền "@${domain}". Vui lòng sử dụng email hợp lệ (ví dụ: @gmail.com!)`
+      });
+    }
+
     // 3. Validate định dạng Số điện thoại Việt Nam (10 chữ số, bắt đầu bằng 0)
     const phoneRegex = /^(0[3|5|7|8|9])[0-9]{8}$/;
     if (!phoneRegex.test(phone)) {
@@ -31,10 +42,10 @@ const register = async (req, res) => {
     }
 
     // 4. Validate độ dài mật khẩu
-    if (password.length < 6) {
+    if (password.length < 6 || password.length > 10) {
       return res.status(400).json({
         success: false,
-        message: 'Mật khẩu phải có ít nhất 6 ký tự'
+        message: 'Mật khẩu phải từ 6 đến 10 ký tự'
       });
     }
 
@@ -72,12 +83,23 @@ const login = async (req, res) => {
       });
     }
 
-    // 2. Validate định dạng email
+    // 2. Validate định dạng Email (Regex)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Định dạng email không hợp lệ'
+        message: 'Định dạng email không hợp lệ (Ví dụ hợp lệ: example@gmail.com)'
+      });
+    }
+
+    // 2.1 Chỉ cho phép các domain email hợp lệ (Whitelist)
+    const allowedDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
+    const domain = email.split('@')[1]?.toLowerCase();
+
+    if (!allowedDomains.includes(domain)) {
+      return res.status(400).json({
+        success: false,
+        message: `Hệ thống không hỗ trợ tên miền "@${domain}". Vui lòng sử dụng email hợp lệ (ví dụ: @gmail.com!)`
       });
     }
 

@@ -64,11 +64,11 @@ const changePassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mật khẩu mới phải có ít nhất 6 ký tự'
-      });
+    if (newPassword.length < 6 || newPassword.length > 10) {
+    return res.status(400).json({
+      success: false,
+      message: 'Mật khẩu mới phải từ 6 đến 10 ký tự'
+    });
     }
 
     await profileService.changePassword(req.user.id, { oldPassword, newPassword });
