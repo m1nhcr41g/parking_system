@@ -122,7 +122,7 @@ Chức năng
 
 API
 
-GET /api/v1/profile/me
+GET /api/v1/user/profile
 
 Yêu cầu
 
@@ -138,7 +138,7 @@ Chức năng
 
 API
 
-PUT /api/v1/profile/me
+PUT /api/v1/users/profile
 
 Chức năng
 
@@ -151,7 +151,7 @@ Chức năng
 
 API
 
-PUT /api/v1/profile/change-password
+PUT /api/v1/users/change-password
 
 Chức năng
 
@@ -312,6 +312,8 @@ Hoàn thành Module Authentication & Profile Management.
 Các chức năng hoạt động đúng theo thiết kế.
 
 ---
+---
+---
 
 
 # Module: Customer Incident Management
@@ -400,7 +402,7 @@ Hiện tại hệ thống hỗ trợ
 ### Endpoint
 
 ```
-POST /customer/incidents/report-lost-qr
+POST /api/v1/customer/incidents/report-lost-qr
 ```
 
 ### Authorization
@@ -438,7 +440,7 @@ Bearer AccessToken
 ### Endpoint
 
 ```
-POST /customer/incidents
+POST /api/v1/customer/incidents
 ```
 
 ### Authorization
@@ -476,7 +478,7 @@ Bearer AccessToken
 ### Endpoint
 
 ```
-GET /customer/incidents
+GET /api/v1/customer/incidents
 ```
 
 ### Authorization
@@ -514,7 +516,7 @@ Bearer AccessToken
 Customer
       │
       ▼
-POST /customer/incidents/report-lost-qr
+POST /api/v1/customer/incidents/report-lost-qr
       │
       ▼
 Service kiểm tra dữ liệu
@@ -534,7 +536,7 @@ Status = PENDING
 Customer
       │
       ▼
-POST /customer/incidents
+POST /api/v1/customer/incidents
       │
       ▼
 Kiểm tra loại sự cố
@@ -554,7 +556,7 @@ Status = PENDING
 Customer
       │
       ▼
-GET /customer/incidents
+GET /api/v1/customer/incidents
       │
       ▼
 JWT Middleware
@@ -661,11 +663,11 @@ getCustomerIncidents()
 Các API
 
 ```
-POST /customer/incidents/report-lost-qr
+POST /api/v1/customer/incidents/report-lost-qr
 
-POST /customer/incidents
+POST /api/v1/customer/incidents
 
-GET /customer/incidents
+GET /api/v1/customer/incidents
 ```
 
 ---
@@ -683,5 +685,112 @@ Hoàn thành các chức năng phía Customer:
 - Sắp xếp danh sách theo thời gian mới nhất
 - Hiển thị trạng thái xử lý và phản hồi từ nhân viên
 
+---
+---
+---
 
+# Module: JWT Authentication & Role-Based Access Control (RBAC)
 
+## Mô tả
+
+Module này chịu trách nhiệm xác thực người dùng bằng JWT và phân quyền theo vai trò (Role-Based Access Control - RBAC). Đây là module dùng chung để bảo vệ tất cả các Private API trong hệ thống Smart Parking.
+
+---
+
+## Chức năng
+
+### 1. JWT Authentication
+- Kiểm tra Access Token.
+- Xác thực người dùng.
+- Giải mã JWT và lưu thông tin vào `req.user`.
+- Từ chối truy cập nếu token không hợp lệ hoặc đã hết hạn.
+
+### 2. Role-Based Access Control (RBAC)
+- Kiểm tra quyền truy cập theo vai trò.
+- Hỗ trợ các role:
+  - CUSTOMER
+  - STAFF
+  - ADMIN
+- Chỉ cho phép các role được chỉ định truy cập API.
+
+---
+
+## Middleware
+
+### authenticateToken
+- Kiểm tra Authorization Header.
+- Verify Access Token.
+- Gắn thông tin người dùng vào `req.user`.
+
+### authorizeRoles(...roles)
+- Kiểm tra quyền truy cập theo Role.
+- Trả về **403 Forbidden** nếu không đủ quyền.
+
+---
+
+## Ví dụ sử dụng
+
+```javascript
+const { authenticateToken } = require('../middlewares/auth.middleware');
+const { authorizeRoles } = require('../middlewares/role.middleware');
+
+// 1. Dành cho mọi tài khoản đã đăng nhập (Profile, Change Password):
+router.use(authenticateToken);
+
+// 2. Chỉ dành riêng cho Khách hàng:
+router.use(authenticateToken);
+router.use(authorizeRoles('CUSTOMER'));
+
+// 3. Dành cho Nhân viên và Quản trị viên:
+router.use(authenticateToken);
+router.use(authorizeRoles('STAFF', 'ADMIN'));
+
+(xem trong customer.incident.routes.js)
+
+```
+## Quy trình hoạt động
+
+```
+Customer
+      │
+      ▼
+Access Token
+      │
+      ▼
+authenticateToken
+      │
+      ▼
+authorizeRoles
+      │
+      ▼
+Controller
+      │
+      ▼
+Service
+      │
+      ▼
+Repository
+      │
+      ▼
+SQL Server
+
+```
+
+---
+
+## Kết quả
+
+Đã kiểm thử thành công:
+
+- JWT Authentication
+- Token hết hạn
+- Token không hợp lệ
+- Phân quyền CUSTOMER
+- Phân quyền STAFF
+- Phân quyền ADMIN
+
+---
+
+## Vai trò trong dự án
+
+Module này được xây dựng để cung cấp cơ chế xác thực và phân quyền dùng chung cho toàn bộ hệ thống, giúp các thành viên khác chỉ cần gắn middleware vào các API Private mà không phải tự viết lại logic xác thực.
