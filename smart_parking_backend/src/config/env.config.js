@@ -18,3 +18,4 @@ module.exports = {
     instanceName: process.env.DB_INSTANCE || undefined
   }
 };
+
