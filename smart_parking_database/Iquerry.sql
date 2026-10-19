@@ -309,3 +309,7 @@ GO
 --13-10-2026
 ALTER TABLE vehicles
 ALTER COLUMN plate_number VARCHAR(20) NULL;
+
+
+INSERT INTO users (id, full_name, email, phone, status)
+VALUES ('USER001', N'Nguyễn Văn A', 'test@gmail.com', '0912345678', 'ACTIVE');
