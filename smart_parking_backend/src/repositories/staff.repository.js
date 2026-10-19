@@ -505,6 +505,237 @@ async function manualCheckIn({
   }
 }
 
+async function manualCheckOut({ staffId, sessionId, paymentMethod }) {
+  const { sql, poolPromise } = require("../config/database");
+  const pool = await poolPromise;
+  const transaction = new sql.Transaction(pool);
+
+  const paymentId = require("crypto").randomUUID();
+  const logId = require("crypto").randomUUID();
+
+  try {
+    await transaction.begin();
+
+    // 1. Kiểm tra nhân viên
+    const staffResult = await new sql.Request(transaction)
+      .input("staffId", sql.VarChar(36), staffId)
+      .query(`
+        SELECT id
+        FROM users
+        WHERE id = @staffId
+          AND role = 'STAFF'
+          AND status = 'ACTIVE'
+      `);
+
+    if (staffResult.recordset.length === 0) {
+      throw new Error("STAFF_NOT_FOUND");
+    }
+
+    // 2. Khóa phiên gửi xe và lấy thông tin
+    const sessionResult = await new sql.Request(transaction)
+      .input("sessionId", sql.VarChar(36), sessionId)
+      .query(`
+        SELECT
+          ps.id,
+          ps.parking_lot_id,
+          ps.slot_id,
+          ps.vehicle_id,
+          ps.guest_plate,
+          ps.entry_time,
+          ps.status,
+          v.type AS vehicle_type,
+          COALESCE(v.plate_number, ps.guest_plate) AS plate_number
+        FROM parking_sessions ps WITH (UPDLOCK, HOLDLOCK)
+        LEFT JOIN vehicles v ON v.id = ps.vehicle_id
+        WHERE ps.id = @sessionId
+      `);
+
+    const session = sessionResult.recordset[0];
+
+    if (!session) throw new Error("SESSION_NOT_FOUND");
+    if (session.status !== "ACTIVE") {
+      throw new Error("SESSION_NOT_ACTIVE");
+    }
+    if (!session.plate_number) throw new Error("PLATE_NUMBER_NOT_FOUND");
+    if (!session.vehicle_type) {
+      throw new Error("VEHICLE_TYPE_UNKNOWN");
+    }
+
+    // 3. Lấy bảng giá
+    const pricingResult = await new sql.Request(transaction)
+      .input("parkingLotId", sql.VarChar(36), session.parking_lot_id)
+      .input("vehicleType", sql.VarChar(20), session.vehicle_type)
+      .query(`
+        SELECT TOP 1
+          first_hour_fee,
+          next_hour_fee,
+          max_daily_fee
+        FROM pricing_rules
+        WHERE parking_lot_id = @parkingLotId
+          AND vehicle_type = @vehicleType
+      `);
+
+    const pricing = pricingResult.recordset[0];
+    if (!pricing) throw new Error("PRICING_RULE_NOT_FOUND");
+
+    // 4. Tính phí theo giờ, làm tròn lên mỗi giờ.
+    // Phí ngày được giới hạn bởi max_daily_fee.
+    const entryTime = new Date(session.entry_time);
+    const exitTime = new Date();
+
+    const elapsedMs = Math.max(0, exitTime - entryTime);
+    const hours = Math.max(1, Math.ceil(elapsedMs / (60 * 60 * 1000)));
+
+    const firstHourFee = Number(pricing.first_hour_fee);
+    const nextHourFee = Number(pricing.next_hour_fee);
+    const maxDailyFee = Number(pricing.max_daily_fee);
+
+    if (
+      !Number.isFinite(firstHourFee) ||
+      !Number.isFinite(nextHourFee) ||
+      !Number.isFinite(maxDailyFee) ||
+      firstHourFee < 0 ||
+      nextHourFee < 0 ||
+      maxDailyFee < 0
+    ) {
+      throw new Error("INVALID_PRICING_RULE");
+    }
+
+    const feePerPeriod =
+      firstHourFee + Math.max(0, hours - 1) * nextHourFee;
+
+    const totalFee = Math.min(
+      feePerPeriod,
+      Math.max(1, Math.ceil(hours / 24)) * maxDailyFee
+    );
+
+    // 5. Tạo thanh toán tiền mặt và đánh dấu đã thanh toán
+    await new sql.Request(transaction)
+      .input("paymentId", sql.VarChar(36), paymentId)
+      .input("staffId", sql.VarChar(36), staffId)
+      .input("sessionId", sql.VarChar(36), sessionId)
+      .input("amount", sql.Decimal(10, 2), totalFee)
+      .input("paymentMethod", sql.VarChar(50), paymentMethod)
+      .query(`
+        INSERT INTO payments (
+          id, user_id, type, amount, status, method, session_id
+        )
+        VALUES (
+          @paymentId, @staffId, 'GUEST_PARKING',
+          @amount, 'PAID', @paymentMethod, @sessionId
+        )
+      `);
+
+    // 6. Hoàn tất phiên gửi xe
+    await new sql.Request(transaction)
+      .input("sessionId", sql.VarChar(36), sessionId)
+      .input("totalFee", sql.Decimal(10, 2), totalFee)
+      .query(`
+        UPDATE parking_sessions
+        SET exit_time = SYSDATETIME(),
+            total_fee = @totalFee,
+            status = 'COMPLETED'
+        WHERE id = @sessionId
+          AND status = 'ACTIVE'
+      `);
+
+    // 7. Giải phóng chỗ đỗ
+    if (session.slot_id) {
+      await new sql.Request(transaction)
+        .input("slotId", sql.VarChar(36), session.slot_id)
+        .query(`
+          UPDATE parking_slots
+          SET status = 'AVAILABLE'
+          WHERE id = @slotId
+            AND status = 'OCCUPIED'
+        `);
+    }
+
+    // 8. Ghi access log
+    await new sql.Request(transaction)
+      .input("logId", sql.VarChar(36), logId)
+      .input("staffId", sql.VarChar(36), staffId)
+      .input("plateNumber", sql.VarChar(20), session.plate_number)
+      .query(`
+        INSERT INTO access_logs (
+          id, user_id, plate_number, direction,
+          method, result, reason, timestamp
+        )
+        VALUES (
+          @logId, @staffId, @plateNumber, 'CHECK_OUT',
+          'MANUAL_ENTRY', 'ALLOW',
+          N'Nhân viên check-out thủ công',
+          SYSDATETIME()
+        )
+      `);
+
+    await transaction.commit();
+
+    return {
+      session_id: sessionId,
+      plate_number: session.plate_number,
+      entry_time: session.entry_time,
+      exit_time: exitTime.toISOString(),
+      duration_hours: hours,
+      total_fee: totalFee,
+      payment_id: paymentId,
+      payment_method: paymentMethod,
+      payment_status: "PAID",
+      status: "COMPLETED",
+    };
+  } catch (error) {
+    try {
+      await transaction.rollback();
+    } catch (_) {}
+
+    throw error;
+  }
+}
+
+// Thêm vào src/repositories/staff.repository.js
+
+const getActiveParkingSessions = async (parkingLotId = null) => {
+  const { poolPromise, sql } = require("../config/database");
+  const pool = await poolPromise;
+
+  const request = pool.request();
+
+  request.input("parking_lot_id", sql.VarChar(36), parkingLotId);
+
+  const result = await request.query(`
+    SELECT
+      ps.id AS session_id,
+      ps.parking_lot_id,
+      pl.name AS parking_lot_name,
+      ps.vehicle_id,
+      COALESCE(v.plate_number, ps.guest_plate) AS plate_number,
+      COALESCE(v.type, pa.vehicle_type) AS vehicle_type,
+      pa.name AS area_name,
+      sl.code AS slot_code,
+      ps.entry_time,
+      DATEDIFF(MINUTE, ps.entry_time, GETDATE()) AS duration_minutes,
+      ps.access_method,
+      ps.status
+    FROM parking_sessions ps
+    INNER JOIN parking_lots pl
+      ON pl.id = ps.parking_lot_id
+    LEFT JOIN vehicles v
+      ON v.id = ps.vehicle_id
+    LEFT JOIN parking_slots sl
+      ON sl.id = ps.slot_id
+    LEFT JOIN parking_areas pa
+      ON pa.id = sl.parking_area_id
+    WHERE ps.status = 'ACTIVE'
+      AND (
+        @parking_lot_id IS NULL
+        OR ps.parking_lot_id = @parking_lot_id
+      )
+    ORDER BY ps.entry_time DESC;
+  `);
+
+  return result.recordset;
+};
+
 module.exports = {
     getPendingVehicles,
     getVehicleForReview,
@@ -512,5 +743,7 @@ module.exports = {
     decideVehicleVerification,
     getVehicleVerificationLogs,
     getAllVehicleVerificationLogs,
-    manualCheckIn
+    manualCheckIn,
+    manualCheckOut,
+    getActiveParkingSessions
 };

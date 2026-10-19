@@ -17,9 +17,13 @@ const helmet = require("helmet");
 
 const vehicleRoutes = require("./routes/vehicle.routes");
 const smartpassRoutes = require("./routes/smartpass.routes");
+const customerAccessLogRoutes = require("./routes/customer-access-log.routes");
 const staffRoutes = require("./routes/staff.routes");
 const accessLogRoutes = require("./routes/access-log.routes");
 const credentialRoutes = require("./routes/credential.routes");
+const adminAccessLogRoutes = require("./routes/admin-access-log.routes");
+const adminVehicleRoutes = require("./routes/admin-vehicle.routes");
+const automaticAccessRoutes = require("./routes/automatic-access.routes");
 
 const app = express();
 
@@ -29,9 +33,13 @@ app.use(express.json());
 
 app.use("/api/v1/customer", vehicleRoutes);
 app.use("/api/v1/customer/smartpass", smartpassRoutes);
+app.use("/api/v1/customer/history/access-logs",customerAccessLogRoutes);
 app.use("/api/v1/staff", staffRoutes);
 app.use("/api/v1/staff/access-logs", accessLogRoutes);
 app.use("/api/v1/admin/credentials", credentialRoutes);
+app.use("/api/v1/admin/access-logs",adminAccessLogRoutes);
+app.use("/api/v1/admin/vehicles", adminVehicleRoutes);
+app.use("/api/v1/access", automaticAccessRoutes);
 
 const multer = require("multer");
 

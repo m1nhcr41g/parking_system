@@ -265,6 +265,69 @@ async function manualCheckIn(req, res) {
   }
 }
 
+async function manualCheckOut(req, res) {
+  try {
+    const data = await staffService.manualCheckOut(req.body);
+
+    return res.status(200).json({
+      success: true,
+      message: "Check-out thủ công thành công",
+      data,
+    });
+  } catch (error) {
+    const errors = {
+      CHECKOUT_FIELDS_REQUIRED: [400, "Vui lòng nhập staff_id, session_id và payment_method"],
+      INVALID_PAYMENT_METHOD: [400, "Phương thức thanh toán không hợp lệ"],
+      STAFF_NOT_FOUND: [403, "Nhân viên không tồn tại hoặc không hoạt động"],
+      SESSION_NOT_FOUND: [404, "Không tìm thấy phiên gửi xe"],
+      SESSION_NOT_ACTIVE: [409, "Phiên gửi xe không còn hoạt động"],
+      PLATE_NUMBER_NOT_FOUND: [400, "Không xác định được biển số xe"],
+      VEHICLE_TYPE_UNKNOWN: [400, "Không xác định được loại phương tiện để tính phí"],
+      PRICING_RULE_NOT_FOUND: [400, "Bãi xe chưa cấu hình giá cho loại phương tiện này"],
+      INVALID_PRICING_RULE: [400, "Cấu hình giá gửi xe không hợp lệ"],
+    };
+
+    const [status, message] = errors[error.message] || [
+      500,
+      "Lỗi khi check-out thủ công",
+    ];
+
+    return res.status(status).json({
+      success: false,
+      error: {
+        code: error.message || "INTERNAL_SERVER_ERROR",
+        message,
+      },
+    });
+  }
+}
+
+const getActiveParkingSessions = async (req, res, next) => {
+  try {
+    const data = await staffService.getActiveParkingSessions(
+      req.query.parking_lot_id
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy danh sách phiên gửi xe đang hoạt động thành công",
+      data,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code || "VALIDATION_ERROR",
+          message: error.message,
+        },
+      });
+    }
+
+    next(error);
+  }
+};
+
 module.exports = {
     getPendingVehicles,
     getVehicleForReview,
@@ -272,5 +335,7 @@ module.exports = {
     decideVehicleVerification,
     getVehicleVerificationLogs,
     getAllVehicleVerificationLogs,
-    manualCheckIn
+    manualCheckIn,
+    manualCheckOut,
+    getActiveParkingSessions
 };

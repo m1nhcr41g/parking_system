@@ -24,6 +24,35 @@ async function getAccessLogs(req, res) {
     }
 }
 
+const getCustomerAccessLogs = async (req, res, next) => {
+  try {
+    const data = await accessLogService.getCustomerAccessLogs({
+      user_id: req.query.user_id,
+      direction: req.query.direction,
+      plate_number: req.query.plate_number,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy lịch sử ra vào bãi xe thành công",
+      data,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code || "VALIDATION_ERROR",
+          message: error.message,
+        },
+      });
+    }
+
+    next(error);
+  }
+};
+
 module.exports = {
-    getAccessLogs
+    getAccessLogs,
+    getCustomerAccessLogs
 };

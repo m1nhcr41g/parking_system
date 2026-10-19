@@ -128,6 +128,37 @@ async function manualCheckIn(data) {
   });
 }
 
+async function manualCheckOut(data) {
+  const { staff_id, session_id, payment_method } = data;
+
+  if (!staff_id || !session_id || !payment_method) {
+    throw new Error("CHECKOUT_FIELDS_REQUIRED");
+  }
+
+  if (!["CASH"].includes(String(payment_method).toUpperCase())) {
+    throw new Error("INVALID_PAYMENT_METHOD");
+  }
+
+  return staffRepository.manualCheckOut({
+    staffId: staff_id,
+    sessionId: session_id,
+    paymentMethod: payment_method.toUpperCase(),
+  });
+}
+
+const getActiveParkingSessions = async (parkingLotId) => {
+  if (parkingLotId && !/^[0-9a-fA-F-]{36}$/.test(parkingLotId)) {
+    const error = new Error("parking_lot_id không hợp lệ");
+    error.statusCode = 400;
+    error.code = "INVALID_PARKING_LOT_ID";
+    throw error;
+  }
+
+  return staffRepository.getActiveParkingSessions(
+    parkingLotId || null
+  );
+};
+
 module.exports = {
     getPendingVehicles,
     getVehicleForReview,
@@ -135,5 +166,7 @@ module.exports = {
     decideVehicleVerification,
     getVehicleVerificationLogs,
     getAllVehicleVerificationLogs,
-    manualCheckIn
+    manualCheckIn,
+    manualCheckOut,
+    getActiveParkingSessions
 };
