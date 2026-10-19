@@ -20,8 +20,8 @@ class BookingRepository{
             )
         )
     `;
-    const result = await pool.request().input('parkingAreaId',sql.Varchar(36),parkingAreaId).input('startTime', sql.DateTime2, new Date(startTime)).input('endTime', sql.DateTime2, new Date(startTime))
-    .querry(query);
+    const result = await pool.request().input('parkingAreaId',sql.VarChar(36),parkingAreaId).input('startTime', sql.DateTime2, new Date(startTime)).input('endTime', sql.DateTime2, new Date(endTime))
+    .query(query);
     return result.recordset;
     }
 
@@ -30,7 +30,7 @@ class BookingRepository{
         const query = `INSERT INTO bookings (user_id, vehicle_id, slot_id, start_time, end_time, status)
       OUTPUT INSERTED.*
       VALUES (@userId, @vehicleId, @slotId, @startTime, @endTime, 'PENDING');`;
-      const result  = await pool.request().input('userId',sql.Varchar(36),userId).input('vehicleId', sql.VarChar(36), vehicleId)
+      const result  = await pool.request().input('userId',sql.VarChar(36),userId).input('vehicleId', sql.VarChar(36), vehicleId)
       .input('slotId',sql.VarChar(36),slotId).input('startTime', sql.DateTime2, new Date(startTime)).input('endTime', sql.DateTime2, new Date(endTime))
       .query(query);
 
@@ -52,7 +52,7 @@ class BookingRepository{
       SET status = 'CANCELLED'
       OUTPUT INSERTED.*
       WHERE id = @bookingId AND user_id = @userId;`;
-      const result = await pool.request().input('bookingId',sql.VarChar(36),bookingId).query(query).input('userId',sql.VarChar(36),userId).query(query);
+      const result = await pool.request().input('bookingId',sql.VarChar(36),bookingId).input('userId',sql.VarChar(36),userId).query(query);
       return result.recordset[0];
     }
 

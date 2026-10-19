@@ -14,7 +14,7 @@ class BookingController{
     async createBooking(req,res){
         try {
             const userId = req.user ? req.user.id : req.body.userId;
-            const booking = await bookingService.creatBooking(userId, req.body);
+            const booking = await bookingService.createBooking(userId, req.body);
             return res.status(200).json({success:true,message: 'dat cho thanh cong',data:booking});
         } catch (error) {
               return res.status(400).json({success:false, message:error.message});   

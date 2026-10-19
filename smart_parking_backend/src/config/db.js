@@ -4,7 +4,7 @@ require('dotenv').config();
 const config = {
   user: process.env.DB_USER || 'sa',
   password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER || 'localhost',
+  server: process.env.DB_SERVER || '127.0.0.1',
   database: process.env.DB_NAME || process.env.DB_DATABASE || 'SmartParkingDB',
   port: parseInt(process.env.DB_PORT || '1433'),
   options: {
@@ -18,6 +18,10 @@ const config = {
     idleTimeoutMillis: 30000
   }
 };
+
+if (process.env.DB_INSTANCE) {
+  config.options.instanceName = process.env.DB_INSTANCE;
+}
 
 // cach 1
 const connectDB = async () => {

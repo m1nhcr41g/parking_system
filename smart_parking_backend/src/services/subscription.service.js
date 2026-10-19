@@ -5,7 +5,7 @@ class SubscriptionService{
         return await subscriptionRepository.getAllPlans();
     }
 
-    async subcribePlan(userId, { vehicleId, planId }){
+    async subscribePlan(userId, { vehicleId, planId }){
         if(!vehicleId||!planId){
             throw new Error('vui long chon xe va goi thue bao can dang ki');
         }
@@ -15,7 +15,7 @@ class SubscriptionService{
         }
 
         const startDate = new Date();
-        const endDate = new Data(startDate);
+        const endDate = new Date(startDate);
         switch(plan.duration){
             case 'WEEKLY':
                 endDate.setDate(startDate.getDate() + 7);
