@@ -3,18 +3,9 @@ const path = require("path");
 
 async function createVehicle(req, res) {
     try {
-        const userId = req.body.user_id;
+        // Lấy ID từ Access Token, không lấy từ request body
+        const userId = req.user.id;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
-            
         const fileUrl = req.file
             ? path.join(
                 "public",
@@ -24,8 +15,11 @@ async function createVehicle(req, res) {
             ).replace(/\\/g, "/")
             : null;
 
+        // Không tin user_id gửi lên từ client
+        const { user_id, ...body } = req.body;
+
         const vehicleData = {
-            ...req.body,
+            ...body,
             file_url: fileUrl
         };
 
@@ -39,7 +33,6 @@ async function createVehicle(req, res) {
             message: "Đăng ký xe thành công",
             data: result.vehicle
         });
-
     } catch (error) {
         const errorMap = {
             INVALID_VEHICLE_TYPE: "Loại phương tiện không hợp lệ",
@@ -48,17 +41,17 @@ async function createVehicle(req, res) {
             OWNER_NAME_REQUIRED: "Tên chủ xe là bắt buộc",
             REGISTRATION_DOCUMENT_REQUIRED:
                 "Giấy đăng ký xe là bắt buộc",
-            PLATE_NUMBER_EXISTS:
-                "Biển số xe đã tồn tại"
+            PLATE_NUMBER_EXISTS: "Biển số xe đã tồn tại"
         };
 
-        return res.status(400).json({
+        const statusCode =
+            error.message === "VEHICLE_NOT_FOUND" ? 404 : 400;
+
+        return res.status(statusCode).json({
             success: false,
             error: {
                 code: error.message,
-                message:
-                    errorMap[error.message] ||
-                    "Đăng ký xe thất bại"
+                message: errorMap[error.message] || "Đăng ký xe thất bại"
             }
         });
     }
@@ -66,17 +59,7 @@ async function createVehicle(req, res) {
 
 async function getVehicles(req, res) {
     try {
-        const userId = req.query.user_id;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
+        const userId = req.user.id;
 
         const vehicles = await vehicleService.getVehiclesByUser(userId);
 
@@ -85,7 +68,6 @@ async function getVehicles(req, res) {
             message: "Lấy danh sách phương tiện thành công",
             data: vehicles
         });
-
     } catch (error) {
         console.error(error);
 
@@ -101,18 +83,8 @@ async function getVehicles(req, res) {
 
 async function getVehicleById(req, res) {
     try {
-        const userId = req.query.user_id;
+        const userId = req.user.id;
         const vehicleId = req.params.id;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
 
         const vehicle = await vehicleService.getVehicleById(
             userId,
@@ -134,7 +106,6 @@ async function getVehicleById(req, res) {
             message: "Lấy thông tin phương tiện thành công",
             data: vehicle
         });
-
     } catch (error) {
         console.error(error);
 
@@ -150,23 +121,16 @@ async function getVehicleById(req, res) {
 
 async function updateVehicle(req, res) {
     try {
-        const userId = req.body.user_id;
+        const userId = req.user.id;
         const vehicleId = req.params.id;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
+        // Không cho phép client thay đổi user_id
+        const { user_id, ...vehicleData } = req.body;
 
         const vehicle = await vehicleService.updateVehicle(
             userId,
             vehicleId,
-            req.body
+            vehicleData
         );
 
         return res.status(200).json({
@@ -174,7 +138,6 @@ async function updateVehicle(req, res) {
             message: "Cập nhật phương tiện thành công",
             data: vehicle
         });
-
     } catch (error) {
         const errorMap = {
             VEHICLE_NOT_FOUND: "Không tìm thấy phương tiện",
@@ -182,9 +145,7 @@ async function updateVehicle(req, res) {
         };
 
         const statusCode =
-            error.message === "VEHICLE_NOT_FOUND"
-                ? 404
-                : 400;
+            error.message === "VEHICLE_NOT_FOUND" ? 404 : 400;
 
         return res.status(statusCode).json({
             success: false,
@@ -200,18 +161,8 @@ async function updateVehicle(req, res) {
 
 async function deleteVehicle(req, res) {
     try {
-        const userId = req.query.user_id;
+        const userId = req.user.id;
         const vehicleId = req.params.id;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
 
         const vehicle = await vehicleService.deleteVehicle(
             userId,
@@ -223,26 +174,20 @@ async function deleteVehicle(req, res) {
             message: "Xóa phương tiện thành công",
             data: vehicle
         });
-
     } catch (error) {
         const errorMap = {
             VEHICLE_NOT_FOUND: "Không tìm thấy phương tiện",
-            VEHICLE_ALREADY_INACTIVE:
-                "Phương tiện đã được xóa"
+            VEHICLE_ALREADY_INACTIVE: "Phương tiện đã được xóa"
         };
 
         const statusCode =
-            error.message === "VEHICLE_NOT_FOUND"
-                ? 404
-                : 400;
+            error.message === "VEHICLE_NOT_FOUND" ? 404 : 400;
 
         return res.status(statusCode).json({
             success: false,
             error: {
                 code: error.message,
-                message:
-                    errorMap[error.message] ||
-                    "Xóa phương tiện thất bại"
+                message: errorMap[error.message] || "Xóa phương tiện thất bại"
             }
         });
     }

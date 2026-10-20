@@ -19,18 +19,17 @@ const dbConfig = {
   }
 };
 
-// Nếu dùng SQL Server named instance thì ưu tiên instanceName.
-// Nếu không, dùng port khi được cấu hình.
 if (env.db.instanceName) {
   dbConfig.options.instanceName = env.db.instanceName;
 } else if (env.db.port) {
   dbConfig.port = env.db.port;
 }
 
+// 1. Tạo poolPromise cho các file code nào dùng pool
 const poolPromise = new sql.ConnectionPool(dbConfig)
   .connect()
   .then((pool) => {
-    console.log("✅ Connected to SmartParkingDB");
+    console.log("✅ Connected to SmartParkingDB via Pool");
     return pool;
   })
   .catch((error) => {
@@ -38,7 +37,17 @@ const poolPromise = new sql.ConnectionPool(dbConfig)
     throw error;
   });
 
+// 2. KÍCH HOẠT KẾT NỐI TOÀN CỤC: Giúp các lệnh `new sql.Request()` của nhóm chạy ngon lành mà không bị lỗi "No connection is specified"
+sql.connect(dbConfig)
+  .then(() => {
+    console.log("✅ Global SQL connection established");
+  })
+  .catch((err) => {
+    console.error("❌ Global SQL connection failed:", err.message);
+  });
+
 module.exports = {
   sql,
-  poolPromise
+  poolPromise,
+  connectDB: () => poolPromise // Dự phòng nếu code nhóm gọi hàm connectDB
 };

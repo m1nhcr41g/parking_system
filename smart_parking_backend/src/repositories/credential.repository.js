@@ -1,4 +1,3 @@
-
 const crypto = require("crypto");
 const { sql, poolPromise } = require("../config/database");
 
@@ -31,10 +30,11 @@ async function getAllCredentials() {
 async function reissueCredential(vehicleId) {
     const pool = await poolPromise;
     const transaction = new sql.Transaction(pool);
-
-    await transaction.begin();
+    let transactionStarted = false;
 
     try {
+        await transaction.begin();
+        transactionStarted = true;
         const check = await new sql.Request(transaction)
             .input("vehicleId", sql.VarChar(36), vehicleId)
             .query(`
@@ -42,7 +42,7 @@ async function reissueCredential(vehicleId) {
                     v.id,
                     v.plate_number,
                     v.verify_status,
-                    v.status,
+                    v.status AS vehicle_status,
                     sp.id AS smartpass_id,
                     sp.status AS smartpass_status,
                     sp.credential_id
@@ -50,7 +50,7 @@ async function reissueCredential(vehicleId) {
                 INNER JOIN dbo.smart_passes sp
                     ON sp.vehicle_id = v.id
                 WHERE v.id = @vehicleId
-                  AND sp.status = 'ACTIVE';
+                AND sp.status = 'ACTIVE';
             `);
 
         const record = check.recordset[0];
@@ -65,16 +65,16 @@ async function reissueCredential(vehicleId) {
         }
 
         if (
-            record.status !== "ACTIVE" ||
+            record.vehicle_status !== "ACTIVE" ||
             record.verify_status !== "VERIFIED"
-        ) {
+            ) {
             const error = new Error(
                 "Phương tiện phải ACTIVE và VERIFIED mới được cấp lại mã"
             );
             error.statusCode = 400;
             error.code = "VEHICLE_NOT_ELIGIBLE";
             throw error;
-        }
+            }
 
         const newToken = crypto.randomBytes(32).toString("hex");
 
@@ -118,12 +118,19 @@ async function reissueCredential(vehicleId) {
                     'ACTIVE' AS status,
                     GETDATE() AS issued_at;
             `);
-
-
+        
         await transaction.commit();
+        transactionStarted = false;
+
         return newCredential.recordset[0];
     } catch (error) {
-        await transaction.rollback();
+        if (transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Credential rollback error:", rollbackError);
+            }
+        }
         throw error;
     }
 }

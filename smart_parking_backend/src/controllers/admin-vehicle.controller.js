@@ -1,12 +1,17 @@
-
 const adminVehicleService = require("../services/admin-vehicle.service");
 
 async function updateVehicleStatus(req, res) {
   try {
     const { id } = req.params;
-    const { status, status_reason, admin_id } = req.body;
+    const { status, status_reason } = req.body;
+    const adminId = req.user.id;
 
-    const vehicle = await adminVehicleService.updateVehicleStatus(id, status, status_reason, admin_id);
+    const vehicle = await adminVehicleService.updateVehicleStatus(
+      id,
+      status,
+      status_reason,
+      adminId
+    );
 
     return res.status(200).json({
       success: true,

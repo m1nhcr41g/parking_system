@@ -1,34 +1,51 @@
 const accessLogRepository = require("../repositories/access-log.repository");
 
+const DIRECTIONS = ["CHECK_IN", "CHECK_OUT"];
+
 async function getAccessLogs(filters = {}) {
-    const direction = filters.direction?.trim().toUpperCase();
+  const direction =
+    typeof filters.direction === "string"
+      ? filters.direction.trim().toUpperCase()
+      : undefined;
 
-    if (direction && !["IN", "OUT"].includes(direction)) {
-        const error = new Error("direction chỉ nhận IN hoặc OUT");
-        error.statusCode = 400;
-        error.code = "INVALID_DIRECTION";
-        throw error;
-    }
+  const plateNumber =
+    typeof filters.plate_number === "string"
+      ? filters.plate_number.trim()
+      : undefined;
 
-    return accessLogRepository.getAccessLogs({
-        plate_number: filters.plate_number?.trim(),
-        direction
-    });
+  if (direction && !DIRECTIONS.includes(direction)) {
+    const error = new Error(
+      "direction phải là CHECK_IN hoặc CHECK_OUT"
+    );
+    error.statusCode = 400;
+    error.code = "INVALID_DIRECTION";
+    throw error;
+  }
+
+  return accessLogRepository.getAccessLogs({
+    plate_number: plateNumber || undefined,
+    direction,
+  });
 }
 
-const getCustomerAccessLogs = async (filters) => {
+async function getCustomerAccessLogs(filters = {}) {
   const { user_id, direction, plate_number } = filters;
 
   if (!user_id) {
-    const error = new Error("user_id là bắt buộc");
-    error.statusCode = 400;
+    const error = new Error("Không xác định được người dùng");
+    error.statusCode = 401;
     error.code = "USER_ID_REQUIRED";
     throw error;
   }
 
+  const normalizedDirection =
+    typeof direction === "string"
+      ? direction.trim().toUpperCase()
+      : undefined;
+
   if (
-    direction &&
-    !["CHECK_IN", "CHECK_OUT"].includes(direction)
+    normalizedDirection &&
+    !DIRECTIONS.includes(normalizedDirection)
   ) {
     const error = new Error(
       "direction phải là CHECK_IN hoặc CHECK_OUT"
@@ -40,12 +57,15 @@ const getCustomerAccessLogs = async (filters) => {
 
   return accessLogRepository.getCustomerAccessLogs({
     user_id,
-    direction,
-    plate_number,
+    direction: normalizedDirection,
+    plate_number:
+      typeof plate_number === "string"
+        ? plate_number.trim() || undefined
+        : undefined,
   });
-};
+}
 
 module.exports = {
-    getAccessLogs,
-    getCustomerAccessLogs
+  getAccessLogs,
+  getCustomerAccessLogs,
 };

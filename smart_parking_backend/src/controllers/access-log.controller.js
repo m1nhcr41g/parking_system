@@ -27,7 +27,7 @@ async function getAccessLogs(req, res) {
 const getCustomerAccessLogs = async (req, res, next) => {
   try {
     const data = await accessLogService.getCustomerAccessLogs({
-      user_id: req.query.user_id,
+      user_id: req.user.id,
       direction: req.query.direction,
       plate_number: req.query.plate_number,
     });

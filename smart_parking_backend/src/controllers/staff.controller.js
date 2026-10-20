@@ -72,11 +72,11 @@ async function getVehicleForReview(req, res) {
 
 async function startVehicleReview(req, res) {
     try {
-        const { reviewer_id } = req.body;
+        const reviewerId = req.user.id;
 
         const data = await staffService.startVehicleReview(
             req.params.id,
-            reviewer_id
+            reviewerId
         );
 
         return res.status(200).json({
@@ -109,11 +109,12 @@ async function startVehicleReview(req, res) {
 
 async function decideVehicleVerification(req, res) {
     try {
-        const { reviewer_id, decision, reason } = req.body;
+        const { decision, reason } = req.body;
+        const reviewerId = req.user.id;
 
         const data = await staffService.decideVehicleVerification(
             req.params.id,
-            reviewer_id,
+            reviewerId,
             decision,
             reason
         );
@@ -225,7 +226,10 @@ async function getAllVehicleVerificationLogs(req, res) {
 
 async function manualCheckIn(req, res) {
   try {
-    const data = await staffService.manualCheckIn(req.body);
+
+    const data = await staffService.manualCheckIn({
+    ...req.body,
+    staff_id: req.user.id});
 
     return res.status(201).json({
       success: true,
@@ -267,7 +271,10 @@ async function manualCheckIn(req, res) {
 
 async function manualCheckOut(req, res) {
   try {
-    const data = await staffService.manualCheckOut(req.body);
+
+    const data = await staffService.manualCheckOut({
+    ...req.body,
+    staff_id: req.user.id});
 
     return res.status(200).json({
       success: true,

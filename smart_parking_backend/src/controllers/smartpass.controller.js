@@ -2,15 +2,16 @@ const smartpassService = require("../services/smartpass.service");
 
 async function createSmartPass(req, res) {
     try {
-        const userId = req.body.user_id;
+        // Lấy ID từ JWT, không lấy từ req.body
+        const userId = req.user.id;
         const vehicleId = req.body.vehicle_id;
 
-        if (!userId || !vehicleId) {
+        if (!vehicleId) {
             return res.status(400).json({
                 success: false,
                 error: {
-                    code: "MISSING_REQUIRED_FIELDS",
-                    message: "user_id và vehicle_id là bắt buộc"
+                    code: "VEHICLE_ID_REQUIRED",
+                    message: "vehicle_id là bắt buộc"
                 }
             });
         }
@@ -63,19 +64,10 @@ async function createSmartPass(req, res) {
 
 async function getSmartPasses(req, res) {
     try {
-        const userId = req.query.user_id;
+        const userId = req.user.id;
 
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: {
-                    code: "USER_ID_REQUIRED",
-                    message: "user_id là bắt buộc"
-                }
-            });
-        }
-
-        const smartpasses = await smartpassService.getSmartPassesByUser(userId);
+        const smartpasses =
+            await smartpassService.getSmartPassesByUser(userId);
 
         return res.status(200).json({
             success: true,
@@ -97,16 +89,16 @@ async function getSmartPasses(req, res) {
 
 async function updateAutoPay(req, res) {
     try {
-        const userId = req.body.user_id;
+        const userId = req.user.id;
         const smartPassId = req.params.id;
         const autoPay = req.body.auto_pay;
 
-        if (!userId || typeof autoPay !== "boolean") {
+        if (typeof autoPay !== "boolean") {
             return res.status(400).json({
                 success: false,
                 error: {
-                    code: "INVALID_REQUEST",
-                    message: "user_id và auto_pay (true/false) là bắt buộc"
+                    code: "INVALID_AUTO_PAY",
+                    message: "auto_pay phải là true hoặc false"
                 }
             });
         }
@@ -130,15 +122,21 @@ async function updateAutoPay(req, res) {
             console.error(error);
         }
 
+        const isInvalidAutoPay = error.message === "INVALID_AUTO_PAY";
+
         return res.status(
-            isNotFound ? 404 : error.message === "INVALID_AUTO_PAY" ? 400 : 500
+            isNotFound ? 404 : isInvalidAutoPay ? 400 : 500
         ).json({
             success: false,
             error: {
-                code: error.message,
+                code: isNotFound
+                    ? "SMARTPASS_NOT_FOUND"
+                    : isInvalidAutoPay
+                        ? "INVALID_AUTO_PAY"
+                        : "SMARTPASS_UPDATE_FAILED",
                 message: isNotFound
                     ? "Không tìm thấy SmartPass đang hoạt động thuộc tài khoản này"
-                    : error.message === "INVALID_AUTO_PAY"
+                    : isInvalidAutoPay
                         ? "auto_pay phải là true hoặc false"
                         : "Cập nhật AutoPay thất bại"
             }

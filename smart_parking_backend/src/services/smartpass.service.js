@@ -1,3 +1,4 @@
+
 const smartpassRepository = require("../repositories/smartpass.repository");
 const { generateQrToken } = require("./qr.service");
 
@@ -21,10 +22,18 @@ async function createSmartPass(userId, vehicleId) {
 
     const qrToken = generateQrToken();
 
-    return await smartpassRepository.createSmartPass(
-        vehicleId,
-        qrToken
-    );
+    try {
+        return await smartpassRepository.createSmartPass(
+            vehicleId,
+            qrToken
+        );
+    } catch (error) {
+        if (error.message?.includes("SMARTPASS_ALREADY_ACTIVE")) {
+            throw new Error("SMARTPASS_ALREADY_ACTIVE");
+        }
+
+        throw error;
+    }
 }
 
 async function getSmartPassesByUser(userId) {
