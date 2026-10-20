@@ -3,13 +3,13 @@ const adminVehicleRepository = require("../repositories/admin-vehicle.repository
 const ALLOWED_STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED"];
 
 async function updateVehicleStatus(vehicleId, status, statusReason, adminId) {
-  if (!vehicleId) {
-    const error = new Error("Thiếu ID phương tiện");
+  if (typeof vehicleId !== "string" || !vehicleId.trim()) {
+    const error = new Error("Thiếu hoặc sai ID phương tiện");
     error.code = "VEHICLE_ID_REQUIRED";
     throw error;
   }
 
-  if (!adminId) {
+  if (typeof adminId !== "string" || !adminId.trim()) {
     const error = new Error("Thiếu ID Admin");
     error.code = "ADMIN_ID_REQUIRED";
     throw error;
@@ -22,7 +22,18 @@ async function updateVehicleStatus(vehicleId, status, statusReason, adminId) {
     error.code = "INVALID_VEHICLE_STATUS";
     throw error;
   }
-    if (
+
+  if (
+    statusReason !== undefined &&
+    statusReason !== null &&
+    typeof statusReason !== "string"
+  ) {
+    const error = new Error("Lý do trạng thái phải là chuỗi");
+    error.code = "STATUS_REASON_REQUIRED";
+    throw error;
+  }
+
+  if (
     ["INACTIVE", "SUSPENDED"].includes(status) &&
     !statusReason?.trim()
   ) {
@@ -32,7 +43,7 @@ async function updateVehicleStatus(vehicleId, status, statusReason, adminId) {
     error.code = "STATUS_REASON_REQUIRED";
     throw error;
   }
-  
+
   try {
     return await adminVehicleRepository.updateVehicleStatus(
       vehicleId,

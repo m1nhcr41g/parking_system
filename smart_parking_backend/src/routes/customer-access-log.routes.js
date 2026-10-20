@@ -2,7 +2,11 @@ const express = require("express");
 const router = express.Router();
 
 const accessLogController = require("../controllers/access-log.controller");
+const { authenticateToken } = require("../middlewares/auth.middleware");
+const { authorizeRoles } = require("../middlewares/role.middleware");
 
-router.get("/",accessLogController.getCustomerAccessLogs);
+router.use(authenticateToken, authorizeRoles("CUSTOMER"));
+
+router.get("/", accessLogController.getCustomerAccessLogs);
 
 module.exports = router;

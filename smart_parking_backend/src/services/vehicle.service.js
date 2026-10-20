@@ -63,9 +63,12 @@ async function createVehicle(userId, data) {
     const transaction = new sql.Transaction(pool);
 
     const vehicleId = crypto.randomUUID();
+    
+    let transactionStarted = false;
 
     try {
         await transaction.begin();
+        transactionStarted = true;
 
         const vehicle = await vehicleRepository.createVehicle(
             {
@@ -107,13 +110,20 @@ async function createVehicle(userId, data) {
         }
 
         await transaction.commit();
+        transactionStarted = false;
 
         return {
             vehicle,
             document
         };
     } catch (error) {
-        await transaction.rollback();
+        if (transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Vehicle transaction rollback error:", rollbackError);
+            }
+        }
         throw error;
     }
 }
@@ -159,8 +169,11 @@ async function updateVehicle(userId, vehicleId, data) {
         }
     }
 
+    let transactionStarted = false;
+
     try {
         await transaction.begin();
+        transactionStarted = true;
 
         const updatedVehicle =
             await vehicleRepository.updateVehicle(
@@ -204,11 +217,18 @@ async function updateVehicle(userId, vehicleId, data) {
         }
 
         await transaction.commit();
+        transactionStarted = false;
 
         return updatedVehicle;
 
     } catch (error) {
-        await transaction.rollback();
+        if (transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Vehicle transaction rollback error:", rollbackError);
+            }
+        }
         throw error;
     }
 }
@@ -227,10 +247,16 @@ async function deleteVehicle(userId, vehicleId) {
         throw new Error("VEHICLE_ALREADY_INACTIVE");
     }
 
-    return await vehicleRepository.deleteVehicle(
+    const deletedVehicle = await vehicleRepository.deleteVehicle(
         userId,
         vehicleId
     );
+
+    if (!deletedVehicle) {
+        throw new Error("VEHICLE_NOT_FOUND");
+    }
+
+    return deletedVehicle;
 }
 
 module.exports = {

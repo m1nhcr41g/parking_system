@@ -1,4 +1,3 @@
-
 const credentialRepository = require("../repositories/credential.repository");
 
 async function getAllCredentials() {
@@ -6,14 +5,17 @@ async function getAllCredentials() {
 }
 
 async function reissueCredential(vehicleId) {
-    if (!vehicleId || !vehicleId.trim()) {
+    if (
+        typeof vehicleId !== "string" ||
+        !vehicleId.trim()
+    ) {
         const error = new Error("vehicle_id không hợp lệ");
         error.statusCode = 400;
         error.code = "INVALID_VEHICLE_ID";
         throw error;
     }
 
-    return credentialRepository.reissueCredential(vehicleId);
+    return credentialRepository.reissueCredential(vehicleId.trim());
 }
 
 module.exports = {

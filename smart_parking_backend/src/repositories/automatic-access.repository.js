@@ -156,16 +156,22 @@ async function checkIn({ parking_lot_id, method, plate_number, secure_token }) {
 
     const session = insertResult.recordset[0];
 
-    // 7. Chiếm chỗ
+    // 7. Chiếm chỗ 
     const updateSlotRequest = new sql.Request(transaction);
-    await updateSlotRequest
-      .input("slotId", sql.VarChar(36), slotId)
-      .query(`
+
+    const updateSlotResult = await updateSlotRequest
+    .input("slotId", sql.VarChar(36), slotId)
+    .query(`
         UPDATE parking_slots
         SET status = 'OCCUPIED'
         WHERE id = @slotId
-          AND status = 'AVAILABLE'
-      `);
+        AND status = 'AVAILABLE'
+    `);
+
+    if (updateSlotResult.rowsAffected[0] !== 1) {
+    throw new Error("NO_AVAILABLE_SLOT");
+    }
+
 
     // 8. Ghi log cho lượt vào
     const logRequest = new sql.Request(transaction);
@@ -319,27 +325,22 @@ async function checkOut({
 
     // 2. Với xe đăng ký, kiểm tra trạng thái hiện tại.
     // Xe bị tạm ngưng vẫn cần được phép checkout để rời bãi.
-    if (session.vehicle_id) {
-      if (session.vehicle_status !== "ACTIVE") {
-        throw new Error("VEHICLE_NOT_ACTIVE");
-      }
-
-      if (session.verify_status !== "VERIFIED") {
-        throw new Error("VEHICLE_NOT_VERIFIED");
-      }
-
-      if (
-        method !== "LICENSE_PLATE" &&
+    // 2. Kiểm tra credential nếu checkout bằng QR/Barcode.
+// Không chặn checkout chỉ vì xe không ACTIVE hoặc chưa VERIFIED.
+// Trường hợp xe không đủ điều kiện checkout tự động,
+// Staff sẽ xử lý checkout thủ công.
+    if (
+    session.vehicle_id &&
+    method !== "LICENSE_PLATE" &&
+    (
+        session.credential_status !== "ACTIVE" ||
         (
-          session.credential_status !== "ACTIVE" ||
-          (
-            session.expired_at &&
-            new Date(session.expired_at) <= new Date()
-          )
+        session.expired_at &&
+        new Date(session.expired_at) <= new Date()
         )
-      ) {
-        throw new Error("CREDENTIAL_INVALID");
-      }
+    )
+    ) {
+    throw new Error("CREDENTIAL_INVALID");
     }
 
     // 3. Tính thời gian gửi và lấy bảng giá
@@ -409,15 +410,17 @@ async function checkOut({
 
     // 5. Giải phóng chỗ đỗ
     if (session.slot_id) {
-      await new sql.Request(transaction)
+    const releaseResult = await new sql.Request(transaction)
         .input("slotId", sql.VarChar(36), session.slot_id)
         .query(`
-          UPDATE parking_slots
-          SET status = 'AVAILABLE'
-          WHERE id = @slotId
+        UPDATE parking_slots
+        SET status = 'AVAILABLE'
+        WHERE id = @slotId
             AND status = 'OCCUPIED'
         `);
+    if (releaseResult.rowsAffected[0] !== 1) {throw new Error("SLOT_RELEASE_FAILED");}
     }
+
     // 6. Kiểm tra payment của session
     const existingPaymentResult = await new sql.Request(transaction)
     .input("sessionId", sql.VarChar(36), session.session_id)
@@ -502,7 +505,7 @@ async function checkOut({
       plate_number: session.plate_number || session.guest_plate,
       duration_minutes: durationMinutes,
       total_fee: totalFee,
-      payment: paymentResult.recordset[0],
+      payment,
       status: "COMPLETED"
     };
   } catch (error) {

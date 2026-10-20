@@ -2,10 +2,12 @@
 if (typeof Promise.withResolvers !== "function") {
     Promise.withResolvers = function () {
         let resolve, reject;
+
         const promise = new Promise((res, rej) => {
             resolve = res;
             reject = rej;
         });
+
         return { promise, resolve, reject };
     };
 }
@@ -25,23 +27,45 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ==================== ROUTES ====================
+// ==================== ROUTES CỦA NHÓM ====================
+const authRoutes = require("./routes/auth.routes");
+const profileRoutes = require("./routes/profile.routes");
+const customerIncidentRoutes = require("./routes/customer.incident.routes");
+
+// ==================== ROUTES CUSTOMER ====================
 const vehicleRoutes = require("./routes/vehicle.routes");
 const smartpassRoutes = require("./routes/smartpass.routes");
 const customerAccessLogRoutes = require("./routes/customer-access-log.routes");
+const bookingRoutes = require("./routes/booking.routes");
+const subscriptionRoutes = require("./routes/subscription.routes");
+
+// ==================== ROUTES STAFF ====================
 const staffRoutes = require("./routes/staff.routes");
 const accessLogRoutes = require("./routes/access-log.routes");
+
+// ==================== ROUTES ADMIN ====================
 const credentialRoutes = require("./routes/credential.routes");
 const adminAccessLogRoutes = require("./routes/admin-access-log.routes");
 const adminVehicleRoutes = require("./routes/admin-vehicle.routes");
-const automaticAccessRoutes = require("./routes/automatic-access.routes");
-
-// ==================== ROUTES CỦA NHÓM ====================
-const bookingRoutes = require("./routes/booking.routes");
-const subscriptionRoutes = require("./routes/subscription.routes");
 const parkingRoutes = require("./routes/parking.routes");
 const pricingRoutes = require("./routes/pricing.routes");
 const reportRoutes = require("./routes/report.routes");
+
+// ==================== ROUTES ACCESS ====================
+const automaticAccessRoutes = require("./routes/automatic-access.routes");
+
+// ==================== ROOT ====================
+app.get("/", (req, res) => {
+    res.json({
+        success: true,
+        message: "Smart Parking API backend đang hoạt động!"
+    });
+});
+
+// ==================== AUTH & PROFILE ====================
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", profileRoutes);
+app.use("/api/v1/customer/incidents", customerIncidentRoutes);
 
 // ==================== CUSTOMER ====================
 app.use("/api/v1/customer", vehicleRoutes);
@@ -64,6 +88,25 @@ app.use("/api/v1/admin/reports", reportRoutes);
 
 // ==================== AUTOMATIC ACCESS ====================
 app.use("/api/v1/access", automaticAccessRoutes);
+
+// ==================== INVALID JSON HANDLER ====================
+app.use((err, req, res, next) => {
+    if (
+        err instanceof SyntaxError &&
+        err.status === 400 &&
+        "body" in err
+    ) {
+        return res.status(400).json({
+            success: false,
+            error: {
+                code: "INVALID_JSON_BODY",
+                message: "Dữ liệu JSON gửi lên không đúng định dạng cú pháp"
+            }
+        });
+    }
+
+    next(err);
+});
 
 // ==================== UPLOAD ERROR HANDLER ====================
 app.use((err, req, res, next) => {

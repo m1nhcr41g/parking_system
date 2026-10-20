@@ -5,7 +5,7 @@ async function getPendingVehicles() {
 }
 
 async function getVehicleForReview(vehicleId) {
-    if (!vehicleId || !vehicleId.trim()) {
+    if (typeof vehicleId !== "string" || !vehicleId.trim()) {
         const error = new Error("ID phương tiện không hợp lệ");
         error.statusCode = 400;
         error.code = "INVALID_VEHICLE_ID";
@@ -65,9 +65,8 @@ async function decideVehicleVerification(
     );
 }
 
-
 async function getVehicleVerificationLogs(vehicleId) {
-    if (!vehicleId || !vehicleId.trim()) {
+    if (typeof vehicleId !== "string" || !vehicleId.trim()) {
         const error = new Error("ID phương tiện không hợp lệ");
         error.statusCode = 400;
         error.code = "INVALID_VEHICLE_ID";
@@ -110,6 +109,10 @@ async function manualCheckIn(data) {
   ) {
     throw new Error("INVALID_VEHICLE_TYPE");
   }
+
+  if (guest_plate !== undefined && guest_plate !== null && typeof guest_plate !== "string") {
+    throw new Error("INVALID_GUEST_PLATE");
+    }
 
   if (guest_plate && guest_plate.trim().length > 20) {
     throw new Error("INVALID_GUEST_PLATE");

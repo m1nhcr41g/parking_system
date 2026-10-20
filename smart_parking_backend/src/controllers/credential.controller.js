@@ -1,4 +1,3 @@
-
 const credentialService = require("../services/credential.service");
 
 async function getAllCredentials(req, res) {
