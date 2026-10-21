@@ -313,3 +313,12 @@ ALTER COLUMN plate_number VARCHAR(20) NULL;
 
 INSERT INTO users (id, full_name, email, phone, status)
 VALUES ('USER001', N'Nguyễn Văn A', 'test@gmail.com', '0912345678', 'ACTIVE');
+
+---21-10-2026
+-- 1. Xóa ràng buộc UNIQUE cũ (lấy tên constraint từ thông báo lỗi của bạn) (khong tao duoc nhieu xe dap)
+ALTER TABLE vehicles DROP CONSTRAINT UQ__vehicles__87EF9F59B4925217;
+
+-- 2. Tạo lại Index độc nhất nhưng chỉ áp dụng khi plate_number KHÁC NULL
+CREATE UNIQUE NONCLUSTERED INDEX UQ_vehicles_plate_not_null
+ON vehicles (plate_number)
+WHERE plate_number IS NOT NULL;
