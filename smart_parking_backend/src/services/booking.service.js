@@ -11,7 +11,7 @@ class BookingService{
         return await bookingRepository.findAvailableSlots(areaId,startTime,endTime);
     }
 
-    async creatBooking(userId, bookingData){
+    async createBooking(userId, bookingData){
         const { vehicleId, slotId, startTime, endTime } = bookingData;
         if(!vehicleId||!slotId||!startTime||!endTime){
             throw new Error('thieu thong tin dat cho');
@@ -20,11 +20,11 @@ class BookingService{
     }
 
     async cancelBooking(userId, bookingId){
-        const booking =- await bookingRepository.findBookingById(bookingId);
+        const booking = await bookingRepository.findBookingById(bookingId);
         if(!booking){
             throw new Error('ko tim thay don dat cho');
         }
-        if(booking.user.id!==userId){
+        if(booking.user_id!==userId){
             throw new Error('ban ko co quyen huy don dat cho nay');
         }
         if(booking.status=='CANCELLED'){

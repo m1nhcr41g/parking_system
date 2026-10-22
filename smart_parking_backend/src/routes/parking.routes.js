@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const parkingController = require('../controllers/parking.controller');
+const { authenticateToken } = require("../middlewares/auth.middleware");
+const { authorizeRoles } = require("../middlewares/role.middleware");
+
+router.use(authenticateToken, authorizeRoles('STAFF', 'ADMIN'));
 
 router.post('/parking-lots',parkingController.createParkingLot);
 router.get('/parking-lots',parkingController.getAllParkingLots);

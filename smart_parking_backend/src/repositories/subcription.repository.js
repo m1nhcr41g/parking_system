@@ -1,5 +1,5 @@
 const {poolPromise,sql} = require('../config/db');
-class SubcriptionRepository{
+class SubscriptionRepository{
     async getAllPlans(){
         const pool = await poolPromise;
         const query = `SELECT * FROM subscription_plans WHERE status = 'ACTIVE';`
@@ -7,26 +7,30 @@ class SubcriptionRepository{
         return result.recordset;
     }
 
-    async findPlanById(planId){
+    async findPlanById(planId) {
         const pool = await poolPromise;
-        const query = `SELECT * FROM subscription_plans WHERE status = 'ACTIVE';`;
-        const result = await pool.request().input('planId',sql.VarChar(36),planId).query(query);
-        return result.recordset[0];    
-    }   
-
-    async createSubcription({ userId, vehicleId, planId, startDate, endDate }){
-        const pool = await poolPromise;
-        const query = `INSERT INTO service_subscriptions (user_id, vehicle_id, plan_id, start_date, end_date, status)
-        OUTPUT INSERT VALUES (@userId, @vehicleId, @planId, @startDate, @endDate, PENDING);`;
-        const result = await pool.request().input('userId', sql.VarChar(36), userId)
-      .input('vehicleId', sql.VarChar(36), vehicleId)
-      .input('planId', sql.VarChar(36), planId)
-      .input('startDate', sql.DateTime2, new Date(startDate))
-      .input('endDate', sql.DateTime2, new Date(endDate))
-      .query(query);
-
-      return result.recordset[0];
+        const query = `SELECT * FROM subscription_plans WHERE id = @planId AND status = 'ACTIVE';`;
+        const result = await pool.request()
+            .input('planId', sql.VarChar(36), planId)
+            .query(query);
+        return result.recordset[0];
     }
+    async createSubscription({ userId, vehicleId, planId, startDate, endDate }) {
+        const pool = await poolPromise;
+        // Đã sửa: OUTPUT INSERTED.* và 'PENDING'
+        const query = `INSERT INTO service_subscriptions (user_id, vehicle_id, plan_id, start_date, end_date, status)
+        OUTPUT INSERTED.* VALUES (@userId, @vehicleId, @planId, @startDate, @endDate, 'PENDING');`;
+        
+        const result = await pool.request()
+            .input('userId', sql.VarChar(36), userId)
+            .input('vehicleId', sql.VarChar(36), vehicleId)
+            .input('planId', sql.VarChar(36), planId)
+            .input('startDate', sql.DateTime2, new Date(startDate))
+            .input('endDate', sql.DateTime2, new Date(endDate))
+            .query(query);
+
+        return result.recordset[0];
+        }
 
     async getUserSubscriptions(userId) {
     const pool = await poolPromise;
@@ -46,4 +50,4 @@ class SubcriptionRepository{
     return result.recordset;
   }
 }
-module.exports = new SubcriptionRepository();
+module.exports = new SubscriptionRepository();

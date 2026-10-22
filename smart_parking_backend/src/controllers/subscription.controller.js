@@ -1,20 +1,20 @@
 const subscriptionService = require('../services/subscription.service');
 
 class SubscriptionController{
-    async getAllPlans(res,req){
+    async getAllPlans(req, res){
         try {
-            const plans  = await subscriptionService();
+            const plans = await subscriptionService.getAllPlans();
             return res.status(200).json({success:true,data:plans});
         } catch (error) {
             return res.status(400).json({success:false, message:error.message});
         }
     }
 
-    async subcribePlan(res,req){
+    async subscribePlan(req, res){
         try {
             const userId = req.user ? req.user.id : req.body.userId;
-            const subcription = await subscriptionService.subcribePlan(userId,req.body);
-            return res.status(200).json({success:true, message:'dang ky theo bao thanh coong',data:subcription});
+            const subcription = await subscriptionService.subscribePlan(userId,req.body);
+            return res.status(200).json({success:true, message:'dang ky thue bao thanh coong',data:subcription});
         } catch (error) {
             return res.status(400).json({success:false, message:error.message});
         }

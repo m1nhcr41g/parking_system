@@ -11,7 +11,7 @@ class AdminService{
     }
 
     async getAllParkingLots() {
-        return await parkingRepository.getAllLots();
+        return await parkingRepository.getAllParkingLots();
     }
 
     async updateParkingLot(id, data) {
@@ -74,3 +74,5 @@ class AdminService{
         return await reportRepository.getDashboardMetrics();
     }
 }
+
+module.exports = new AdminService();
