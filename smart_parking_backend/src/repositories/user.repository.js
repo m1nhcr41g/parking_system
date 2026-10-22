@@ -119,6 +119,135 @@ const revokeRefreshToken = async (token) => {
     `);
 };
 
+
+//Lấy danh sách users (phân trang, tìm kiếm, lọc theo role/status)
+const getAllUsers = async ({ page = 1, limit = 10, search = '', role, status }) => {
+  const request = new sql.Request();
+  const offset = (Number(page) - 1) * Number(limit);
+
+  let filterConditions = ' WHERE 1=1';
+
+  if (search) {
+    request.input('search', sql.NVarChar(100), `%${search}%`);
+    filterConditions += ` AND (full_name LIKE @search OR email LIKE @search OR phone LIKE @search)`;
+  }
+
+  if (role) {
+    request.input('role', sql.VarChar(20), role);
+    filterConditions += ` AND role = @role`;
+  }
+
+  if (status) {
+    request.input('status', sql.VarChar(20), status);
+    filterConditions += ` AND status = @status`;
+  }
+
+  // Đếm tổng số bản ghi
+  const countRequest = new sql.Request();
+
+  if (search) {
+    countRequest.input('search', sql.NVarChar(100), `%${search}%`);
+  }
+
+  if (role) {
+    countRequest.input('role', sql.VarChar(20), role);
+  }
+
+  if (status) {
+    countRequest.input('status', sql.VarChar(20), status);
+  }
+
+  const totalCountResult = await countRequest.query(`
+    SELECT COUNT(*) AS total
+    FROM users
+    ${filterConditions}
+  `);
+
+  const total = totalCountResult.recordset[0].total;
+
+  // Lấy dữ liệu theo phân trang
+  const listRequest = new sql.Request();
+
+  if (search) {
+    listRequest.input('search', sql.NVarChar(100), `%${search}%`);
+  }
+
+  if (role) {
+    listRequest.input('role', sql.VarChar(20), role);
+  }
+
+  if (status) {
+    listRequest.input('status', sql.VarChar(20), status);
+  }
+
+  listRequest.input('offset', sql.Int, offset);
+  listRequest.input('limit', sql.Int, Number(limit));
+
+  const usersResult = await listRequest.query(`
+    SELECT
+      id,
+      full_name,
+      email,
+      phone,
+      role,
+      status,
+      created_at,
+      updated_at
+    FROM users
+    ${filterConditions}
+    ORDER BY created_at DESC
+    OFFSET @offset ROWS
+    FETCH NEXT @limit ROWS ONLY
+  `);
+
+  return {
+    users: usersResult.recordset,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(total / Number(limit))
+  };
+};
+
+//Thêm mới nhân viên STAFF
+const createStaffUser = async ({ fullName, email, phone, passwordHash }) => {
+  const request = new sql.Request();
+  const result = await request
+    .input('full_name', sql.NVarChar(100), fullName)
+    .input('email', sql.VarChar(100), email)
+    .input('phone', sql.VarChar(20), phone)
+    .input('password', sql.VarChar(255), passwordHash)
+    .query(`
+      INSERT INTO users (full_name, email, phone, password, role, status)
+      OUTPUT INSERTED.id, INSERTED.full_name, INSERTED.email, INSERTED.phone, INSERTED.role, INSERTED.status, INSERTED.created_at
+      VALUES (@full_name, @email, @phone, @password, 'STAFF', 'ACTIVE')
+    `);
+  return result.recordset[0];
+};
+
+//Cập nhật trạng thái (Khóa / Mở khóa / Xóa mềm)
+const updateUserStatus = async (id, status) => {
+  const request = new sql.Request();
+  const result = await request
+    .input('id', sql.VarChar(36), id)
+    .input('status', sql.VarChar(20), status)
+    .query(`
+      UPDATE users 
+      SET status = @status, updated_at = GETDATE()
+      OUTPUT INSERTED.id, INSERTED.full_name, INSERTED.email, INSERTED.phone, INSERTED.role, INSERTED.status, INSERTED.updated_at
+      WHERE id = @id
+    `);
+  return result.recordset[0];
+};
+
+//Thu hồi token của user bị khóa
+const revokeUserTokens = async (userId) => {
+  const request = new sql.Request();
+  await request
+    .input('userId', sql.VarChar(36), userId)
+    .query(`UPDATE refresh_tokens SET revoked = 1 WHERE user_id = @userId`);
+};
+
 module.exports = {
   findByEmail,
   findByPhone,
@@ -129,5 +258,9 @@ module.exports = {
   updatePassword,
   saveRefreshToken,
   findRefreshToken,
-  revokeRefreshToken
+  revokeRefreshToken,
+  getAllUsers,
+  createStaffUser, 
+  updateUserStatus, 
+  revokeUserTokens
 };

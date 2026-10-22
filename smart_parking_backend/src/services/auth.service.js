@@ -50,18 +50,20 @@ const login = async ({ email, password }) => {
     throw error;
   }
 
-  if (user.status !== 'ACTIVE') {
-    const error = new Error(`Tài khoản hiện đang bị khóa (${user.status})`);
-    error.statusCode = 403;
-    throw error;
-  }
-
   const isMatch = await comparePassword(password, user.password);
   if (!isMatch) {
     const error = new Error('Email hoặc mật khẩu không chính xác');
     error.statusCode = 401;
     throw error;
   }
+
+
+  if (user.status !== 'ACTIVE') {
+    const error = new Error(`Tài khoản hiện đang bị khóa (${user.status})`);
+    error.statusCode = 403;
+    throw error;
+  }
+
 
   const payload = {
     id: user.id,

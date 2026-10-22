@@ -5,6 +5,7 @@ const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const customerIncidentRoutes = require('./routes/customer.incident.routes');
+const adminRoutes = require('./routes/admin.user.routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -34,6 +35,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', profileRoutes);
 app.use('/api/v1/customer/incidents', customerIncidentRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Khởi động server và kết nối DB
 const startServer = async () => {
