@@ -1,15 +1,15 @@
- // Polyfill cho Promise.withResolvers (Node.js < 22)
+// Polyfill cho Promise.withResolvers (Node.js < 22)
 if (typeof Promise.withResolvers !== "function") {
-    Promise.withResolvers = function () {
-        let resolve, reject;
+  Promise.withResolvers = function () {
+    let resolve, reject;
 
-        const promise = new Promise((res, rej) => {
-            resolve = res;
-            reject = rej;
-        });
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
 
-        return { promise, resolve, reject };
-    };
+    return { promise, resolve, reject };
+  };
 }
 
 require("dotenv").config();
@@ -18,7 +18,9 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const multer = require("multer");
+const { connectDB } = require("./config/db");
 
+// ==================== KHỞI TẠO APP ====================
 const app = express();
 
 // ==================== MIDDLEWARE ====================
@@ -27,10 +29,11 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ==================== ROUTES CỦA NHÓM ====================
+// ==================== ROUTES AUTH & USER & INCIDENT ====================
 const authRoutes = require("./routes/auth.routes");
 const profileRoutes = require("./routes/profile.routes");
 const customerIncidentRoutes = require("./routes/customer.incident.routes");
+const adminRoutes = require("./routes/admin.user.routes");
 
 // ==================== ROUTES CUSTOMER ====================
 const vehicleRoutes = require("./routes/vehicle.routes");
@@ -56,16 +59,17 @@ const automaticAccessRoutes = require("./routes/automatic-access.routes");
 
 // ==================== ROOT ====================
 app.get("/", (req, res) => {
-    res.json({
-        success: true,
-        message: "Smart Parking API backend đang hoạt động!"
-    });
+  res.json({
+    success: true,
+    message: "Smart Parking API backend đang hoạt động!"
+  });
 });
 
-// ==================== AUTH & PROFILE ====================
+// ==================== AUTH & PROFILE & ADMIN USER ====================
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", profileRoutes);
 app.use("/api/v1/customer/incidents", customerIncidentRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 // ==================== CUSTOMER ====================
 app.use("/api/v1/customer", vehicleRoutes);
@@ -91,83 +95,83 @@ app.use("/api/v1/access", automaticAccessRoutes);
 
 // ==================== INVALID JSON HANDLER ====================
 app.use((err, req, res, next) => {
-    if (
-        err instanceof SyntaxError &&
-        err.status === 400 &&
-        "body" in err
-    ) {
-        return res.status(400).json({
-            success: false,
-            error: {
-                code: "INVALID_JSON_BODY",
-                message: "Dữ liệu JSON gửi lên không đúng định dạng cú pháp"
-            }
-        });
-    }
+  if (
+    err instanceof SyntaxError &&
+    err.status === 400 &&
+    "body" in err
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_JSON_BODY",
+        message: "Dữ liệu JSON gửi lên không đúng định dạng cú pháp"
+      }
+    });
+  }
 
-    next(err);
+  next(err);
 });
 
 // ==================== UPLOAD ERROR HANDLER ====================
 app.use((err, req, res, next) => {
-    if (err instanceof multer.MulterError) {
-        const tooLarge = err.code === "LIMIT_FILE_SIZE";
+  if (err instanceof multer.MulterError) {
+    const tooLarge = err.code === "LIMIT_FILE_SIZE";
 
-        return res.status(tooLarge ? 413 : 400).json({
-            success: false,
-            error: {
-                code: err.code,
-                message: tooLarge
-                    ? "File không được vượt quá 5 MB"
-                    : "Upload file thất bại"
-            }
-        });
-    }
+    return res.status(tooLarge ? 413 : 400).json({
+      success: false,
+      error: {
+        code: err.code,
+        message: tooLarge
+          ? "File không được vượt quá 5 MB"
+          : "Upload file thất bại"
+      }
+    });
+  }
 
-    if (err.message === "INVALID_FILE_TYPE") {
-        return res.status(400).json({
-            success: false,
-            error: {
-                code: "INVALID_FILE_TYPE",
-                message: "Chỉ chấp nhận JPG, JPEG, PNG hoặc PDF"
-            }
-        });
-    }
+  if (err.message === "INVALID_FILE_TYPE") {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: "INVALID_FILE_TYPE",
+        message: "Chỉ chấp nhận JPG, JPEG, PNG hoặc PDF"
+      }
+    });
+  }
 
-    next(err);
+  next(err);
 });
 
 // ==================== 404 HANDLER ====================
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: {
-            code: "ENDPOINT_NOT_FOUND",
-            message: "Endpoint API không tồn tại"
-        }
-    });
+  res.status(404).json({
+    success: false,
+    error: {
+      code: "ENDPOINT_NOT_FOUND",
+      message: "Endpoint API không tồn tại"
+    }
+  });
 });
 
 // ==================== GENERAL ERROR HANDLER ====================
 app.use((err, req, res, next) => {
-    console.error("Lỗi server:", err.stack);
+  console.error("Lỗi server:", err.stack);
 
-    res.status(500).json({
-        success: false,
-        error: {
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Lỗi bên phía server"
-        }
-    });
+  res.status(500).json({
+    success: false,
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Lỗi bên phía server"
+    }
+  });
 });
 
 // ==================== START SERVER ====================
 if (require.main === module) {
-    const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 5000;
 
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running at http://localhost:${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  });
 }
 
 module.exports = app;
