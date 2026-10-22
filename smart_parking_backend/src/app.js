@@ -154,13 +154,21 @@ app.use((req, res) => {
 
 // ==================== GENERAL ERROR HANDLER ====================
 app.use((err, req, res, next) => {
-  console.error("Lỗi server:", err.stack);
+  // Lấy status code từ error (mặc định 500 nếu là lỗi hệ thống không lường trước)
+  const statusCode = err.statusCode || 500;
+  
+  // Xác định mã lỗi code
+  let errorCode = 'INTERNAL_SERVER_ERROR';
+  if (statusCode === 400) errorCode = 'BAD_REQUEST';
+  else if (statusCode === 401) errorCode = 'UNAUTHORIZED';
+  else if (statusCode === 403) errorCode = 'FORBIDDEN';
+  else if (statusCode === 404) errorCode = 'NOT_FOUND';
 
-  res.status(500).json({
+  return res.status(statusCode).json({
     success: false,
     error: {
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Lỗi bên phía server"
+      code: errorCode,
+      message: err.message || 'Lỗi bên phía server'
     }
   });
 });
@@ -170,7 +178,7 @@ if (require.main === module) {
   const PORT = process.env.PORT || 5000;
 
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
   });
 }
 

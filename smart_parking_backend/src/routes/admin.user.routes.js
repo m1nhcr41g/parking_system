@@ -12,10 +12,14 @@ router.use(authorizeRoles('ADMIN'));
 //Tra cứu danh sách tất cả người dùng hệ thống
 router.get('/users', adminUserController.getAllUsers);
 
+// chi tiết nguoi dung
+router.get('/users/:id', adminUserController.getUserById);
+
 //Khóa hoặc Mở khóa tài khoản người dùng
 router.patch('/users/:id/status', adminUserController.updateStatus);
 
 //Tạo tài khoản & Hồ sơ Nhân viên (STAFF)
 router.post('/staff', adminUserController.createStaff);
+
 
 module.exports = router;
