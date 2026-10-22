@@ -29,25 +29,25 @@ if (env.db.instanceName) {
 const poolPromise = new sql.ConnectionPool(dbConfig)
   .connect()
   .then((pool) => {
-    console.log("✅ Connected to SmartParkingDB via Pool");
+    console.log("Connected to SmartParkingDB via Pool");
     return pool;
   })
   .catch((error) => {
-    console.error("❌ Database connection failed:", error.message);
+    console.error("Database connection failed:", error.message);
     throw error;
   });
 
 // 2. KÍCH HOẠT KẾT NỐI TOÀN CỤC: Giúp các lệnh `new sql.Request()` của nhóm chạy ngon lành mà không bị lỗi "No connection is specified"
 sql.connect(dbConfig)
   .then(() => {
-    console.log("✅ Global SQL connection established");
+    console.log("Global SQL connection established");
   })
   .catch((err) => {
-    console.error("❌ Global SQL connection failed:", err.message);
+    console.error("Global SQL connection failed:", err.message);
   });
 
 module.exports = {
   sql,
   poolPromise,
-  connectDB: () => poolPromise // Dự phòng nếu code nhóm gọi hàm connectDB
+  connectDB: () => poolPromise // 
 };
