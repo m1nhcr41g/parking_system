@@ -1,4 +1,4 @@
-const { sql } = require('../config/db');
+const {poolPromise, sql } = require('../config/db');
 
 const createIncident = async ({ userId, vehicleId = null, credentialId = null, type, note }) => {
   const request = new sql.Request();
@@ -42,6 +42,12 @@ const getIncidentsByUserId = async (userId) => {
     `);
   return result.recordset;
 };
+
+const gettAllIncidents = async (status = null )=>{
+  const pool = await poolPromise;
+  const request =  pool.request();
+  let query = ''
+}
 
 module.exports = {
   createIncident,

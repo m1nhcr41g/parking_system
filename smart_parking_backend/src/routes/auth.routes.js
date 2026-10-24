@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
-const { authenticateToken } = require("../middlewares/auth.middleware");
+const { authenticateToken } = require('../middlewares/auth.middleware');
 
 // Các route công khai (Public) - KHÔNG cần token
 router.post('/register', authController.register);

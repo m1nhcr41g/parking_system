@@ -23,12 +23,13 @@ const { connectDB } = require("./config/db");
 // ==================== KHỞI TẠO APP ====================
 const app = express();
 
-// ==================== MIDDLEWARE ====================
+
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+<<<<<<< Updated upstream
 // ==================== ROUTES AUTH & USER & INCIDENT ====================
 const authRoutes = require("./routes/auth.routes");
 const profileRoutes = require("./routes/profile.routes");
@@ -36,28 +37,27 @@ const customerIncidentRoutes = require("./routes/customer.incident.routes");
 const adminRoutes = require("./routes/admin.user.routes");
 
 // ==================== ROUTES CUSTOMER ====================
+=======
+const authRoutes = require("./routes/auth.routes");
+const profileRoutes = require("./routes/profile.routes");
+const customerIncidentRoutes = require("./routes/customer.incident.routes");
+>>>>>>> Stashed changes
 const vehicleRoutes = require("./routes/vehicle.routes");
 const smartpassRoutes = require("./routes/smartpass.routes");
 const customerAccessLogRoutes = require("./routes/customer-access-log.routes");
 const bookingRoutes = require("./routes/booking.routes");
 const subscriptionRoutes = require("./routes/subscription.routes");
-
-// ==================== ROUTES STAFF ====================
 const staffRoutes = require("./routes/staff.routes");
 const accessLogRoutes = require("./routes/access-log.routes");
-
-// ==================== ROUTES ADMIN ====================
 const credentialRoutes = require("./routes/credential.routes");
 const adminAccessLogRoutes = require("./routes/admin-access-log.routes");
 const adminVehicleRoutes = require("./routes/admin-vehicle.routes");
 const parkingRoutes = require("./routes/parking.routes");
 const pricingRoutes = require("./routes/pricing.routes");
 const reportRoutes = require("./routes/report.routes");
-
-// ==================== ROUTES ACCESS ====================
 const automaticAccessRoutes = require("./routes/automatic-access.routes");
 
-// ==================== ROOT ====================
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -65,6 +65,7 @@ app.get("/", (req, res) => {
   });
 });
 
+<<<<<<< Updated upstream
 // ==================== AUTH & PROFILE & ADMIN USER ====================
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", profileRoutes);
@@ -72,28 +73,26 @@ app.use("/api/v1/customer/incidents", customerIncidentRoutes);
 app.use("/api/v1/admin", adminRoutes);
 
 // ==================== CUSTOMER ====================
+=======
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", profileRoutes);
+app.use("/api/v1/customer/incidents", customerIncidentRoutes);
+>>>>>>> Stashed changes
 app.use("/api/v1/customer", vehicleRoutes);
 app.use("/api/v1/customer/smartpass", smartpassRoutes);
 app.use("/api/v1/customer/history/access-logs", customerAccessLogRoutes);
 app.use("/api/v1/customer/bookings", bookingRoutes);
 app.use("/api/v1/customer/subscriptions", subscriptionRoutes);
-
-// ==================== STAFF ====================
 app.use("/api/v1/staff", staffRoutes);
 app.use("/api/v1/staff/access-logs", accessLogRoutes);
-
-// ==================== ADMIN ====================
 app.use("/api/v1/admin/credentials", credentialRoutes);
 app.use("/api/v1/admin/access-logs", adminAccessLogRoutes);
 app.use("/api/v1/admin/vehicles", adminVehicleRoutes);
 app.use("/api/v1/admin", parkingRoutes);
 app.use("/api/v1/admin", pricingRoutes);
 app.use("/api/v1/admin/reports", reportRoutes);
-
-// ==================== AUTOMATIC ACCESS ====================
 app.use("/api/v1/access", automaticAccessRoutes);
 
-// ==================== INVALID JSON HANDLER ====================
 app.use((err, req, res, next) => {
   if (
     err instanceof SyntaxError &&
@@ -112,7 +111,6 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// ==================== UPLOAD ERROR HANDLER ====================
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     const tooLarge = err.code === "LIMIT_FILE_SIZE";
@@ -141,7 +139,6 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-// ==================== 404 HANDLER ====================
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -152,7 +149,6 @@ app.use((req, res) => {
   });
 });
 
-// ==================== GENERAL ERROR HANDLER ====================
 app.use((err, req, res, next) => {
   // Lấy status code từ error (mặc định 500 nếu là lỗi hệ thống không lường trước)
   const statusCode = err.statusCode || 500;
@@ -173,7 +169,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ==================== START SERVER ====================
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
 
