@@ -1,4 +1,3 @@
-// Polyfill cho Promise.withResolvers (Node.js < 22)
 if (typeof Promise.withResolvers !== "function") {
   Promise.withResolvers = function () {
     let resolve, reject;
@@ -19,8 +18,6 @@ const cors = require("cors");
 const helmet = require("helmet");
 const multer = require("multer");
 const { connectDB } = require("./config/db");
-
-// ==================== KHỞI TẠO APP ====================
 const app = express();
 
 
@@ -29,19 +26,9 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-<<<<<<< Updated upstream
-// ==================== ROUTES AUTH & USER & INCIDENT ====================
 const authRoutes = require("./routes/auth.routes");
 const profileRoutes = require("./routes/profile.routes");
 const customerIncidentRoutes = require("./routes/customer.incident.routes");
-const adminRoutes = require("./routes/admin.user.routes");
-
-// ==================== ROUTES CUSTOMER ====================
-=======
-const authRoutes = require("./routes/auth.routes");
-const profileRoutes = require("./routes/profile.routes");
-const customerIncidentRoutes = require("./routes/customer.incident.routes");
->>>>>>> Stashed changes
 const vehicleRoutes = require("./routes/vehicle.routes");
 const smartpassRoutes = require("./routes/smartpass.routes");
 const customerAccessLogRoutes = require("./routes/customer-access-log.routes");
@@ -56,6 +43,7 @@ const parkingRoutes = require("./routes/parking.routes");
 const pricingRoutes = require("./routes/pricing.routes");
 const reportRoutes = require("./routes/report.routes");
 const automaticAccessRoutes = require("./routes/automatic-access.routes");
+const staffIncidentRoutes = require('./routes/staff.incident.routes');
 
 
 app.get("/", (req, res) => {
@@ -65,19 +53,9 @@ app.get("/", (req, res) => {
   });
 });
 
-<<<<<<< Updated upstream
-// ==================== AUTH & PROFILE & ADMIN USER ====================
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", profileRoutes);
 app.use("/api/v1/customer/incidents", customerIncidentRoutes);
-app.use("/api/v1/admin", adminRoutes);
-
-// ==================== CUSTOMER ====================
-=======
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/users", profileRoutes);
-app.use("/api/v1/customer/incidents", customerIncidentRoutes);
->>>>>>> Stashed changes
 app.use("/api/v1/customer", vehicleRoutes);
 app.use("/api/v1/customer/smartpass", smartpassRoutes);
 app.use("/api/v1/customer/history/access-logs", customerAccessLogRoutes);
@@ -92,6 +70,7 @@ app.use("/api/v1/admin", parkingRoutes);
 app.use("/api/v1/admin", pricingRoutes);
 app.use("/api/v1/admin/reports", reportRoutes);
 app.use("/api/v1/access", automaticAccessRoutes);
+app.use('/api/v1/staff/incidents', staffIncidentRoutes);
 
 app.use((err, req, res, next) => {
   if (

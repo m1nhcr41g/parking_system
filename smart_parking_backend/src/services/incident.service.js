@@ -81,16 +81,51 @@ const reportGeneralIncident = async (userId, data) => {
   });
 };
 
-// Lấy danh sách sự cố của chính khách hàng
 const getCustomerIncidents = async (userId) => {
-  const incidents =
-        await incidentRepository.getIncidentsByUserId(userId);
-
+  const incidents = await incidentRepository.getIncidentsByUserId(userId);
     return incidents || [];
 };
 
+const getAllIncidents = async (status) => {
+  const incidents = await incidentRepository.gettAllIncidents(status);
+  return incidents || [];
+};
+
+const verifyIncident = async (incidentId, data) => {
+  const { status, resolutionNote } = data;
+
+  if (!status) {
+    const error = new Error('Trạng thái (status) không được để trống');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const allowedStatuses = ['IN_PROGRESS', 'RESOLVED', 'REJECTED'];
+  if (!allowedStatuses.includes(status)) {
+    const error = new Error(
+      `Trạng thái không hợp lệ. Cho phép: ${allowedStatuses.join(', ')}`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const updatedIncident = await incidentRepository.verifyIncident(incidentId, {
+    status,
+    resolutionNote: resolutionNote ? resolutionNote.trim() : null
+  });
+
+  if (!updatedIncident) {
+    const error = new Error('Không tìm thấy thông tin sự cố cần xử lý');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return updatedIncident;
+};
 module.exports = {
   reportLostQr,
   reportGeneralIncident,
-  getCustomerIncidents
+  getCustomerIncidents,
+  getAllIncidents,
+  verifyIncident
 };
